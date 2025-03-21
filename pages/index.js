@@ -1,27 +1,45 @@
-import { v4 as uuidv4 } from 'uuid';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import axios from 'axios';
 
 export default function Home() {
   const router = useRouter();
   const [roomId, setRoomId] = useState('');
 
-  const createAndJoin = () => {
-    const roomId = uuidv4();
-    router.push(`/${roomId}`);
+  const createAndJoin = async () => {
+    try {
+      const payload = {
+        id: crypto.randomUUID(),
+        title: "New Game",
+        description: "Generated from frontend",
+        created_at: new Date().toISOString(),
+        max_players: 4,
+        cover_pdf_path: "",
+        rules_pdf_path: "",
+        user_ids: [],
+        creator_id: crypto.randomUUID()
+      };
+
+      const response = await axios.post('http://localhost:8000/api/v1/game', payload);
+      const newRoomId = response.data.id;
+
+      console.log("✅ Game created with id:", newRoomId);
+      router.push(`/${newRoomId}`);
+    } catch (error) {
+      console.error("❌ Failed to create game:", error);
+      alert("Failed to create room. Try again.");
+    }
   };
 
   const joinRoom = () => {
     if (roomId) router.push(`/${roomId}`);
-    else {
-      alert("Please provide a valid room id");
-    }
+    else alert("Please provide a valid room id");
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-indigo-950 text-white p-6">
       <h1 className="text-3xl font-bold mb-8">Начало игровой сессии</h1>
-      <p className=''>Настройте видео прежде чем начать</p>
+      <p>Настройте видео прежде чем начать</p>
       <div className="flex flex-col w-full max-w-md gap-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <input 

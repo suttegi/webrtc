@@ -2,11 +2,11 @@ import { Server } from "socket.io";
 
 const SocketHandler = (req, res) => {
     console.log("called api");
+
     if (res.socket.server.io) {
         console.log("socket already running");
     } else {
         const io = new Server(res.socket.server, {
-            path: "/api/socket",
             cors: {
                 origin: "*",
                 methods: ["GET", "POST"]
@@ -15,17 +15,12 @@ const SocketHandler = (req, res) => {
         res.socket.server.io = io;
 
         io.on('connection', (socket) => {
-            console.log("✅ server is connected");
+            console.log("server is connected");
 
             socket.on('join-room', (roomId, userId) => {
-                console.log(`a new user ${userId} joined room ${roomId}`);
+                console.log(`A new user ${userId} joined room ${roomId}`);
                 socket.join(roomId);
                 socket.broadcast.to(roomId).emit('user-connected', userId);
-            });
-
-            socket.on('send-message', ({ roomId, message, userId }) => {
-                console.log(`Message from ${userId} in ${roomId}: ${message}`);
-                io.to(roomId).emit('receive-message', { message, userId });
             });
 
             socket.on('user-toggle-audio', (userId, roomId) => {
@@ -49,9 +44,17 @@ const SocketHandler = (req, res) => {
                 console.log(`Clearing board in room ${roomId}`);
                 socket.to(roomId).emit('clear-board');
             });
+
+            socket.on('chat-message', ({ roomId, message, userId }) => {
+                console.log(`Message from ${userId} in room ${roomId}: ${message}`);
+                socket.to(roomId).emit('chat-message', { message, userId });
+            });
+            
         });
     }
-    res.end();
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: 'Socket initialized' }));
 };
 
 export default SocketHandler;
