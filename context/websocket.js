@@ -18,13 +18,13 @@ export const WebSocketProvider = ({ children, roomId, clientId }) => {
       console.log("✅ WebSocket connected");
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = (event) => {s
       console.log("📨 Received:", event.data);
       setMessages((prev) => [...prev, event.data]);
     };
 
     ws.onerror = (err) => {
-      console.error("❌ WebSocket error:", err);
+      console.error("❌ WebSocket error:", err);тзь
     };
 
     ws.onclose = () => {

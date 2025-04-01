@@ -34,21 +34,6 @@ const SocketHandler = (req, res) => {
             socket.on('user-leave', (userId, roomId) => {
                 socket.broadcast.to(roomId).emit('user-leave', userId);
             });
-
-            socket.on('draw', ({ roomId, x0, y0, x1, y1, color, lineWidth }) => {
-                console.log(`DRAW from ${socket.id} to room ${roomId}`);
-                socket.to(roomId).emit('draw', { x0, y0, x1, y1, color, lineWidth });
-            });
-
-            socket.on('clear-board', (roomId) => {
-                console.log(`Clearing board in room ${roomId}`);
-                socket.to(roomId).emit('clear-board');
-            });
-
-            socket.on('chat-message', ({ roomId, message, userId }) => {
-                console.log(`Message from ${userId} in room ${roomId}: ${message}`);
-                socket.to(roomId).emit('chat-message', { message, userId });
-            });
             
         });
     }

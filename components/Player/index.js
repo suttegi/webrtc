@@ -15,7 +15,7 @@ const Player = ({ url, muted, playing, isActive }) => {
       className={`relative overflow-hidden mb-5 h-full ${
         isActive
           ? "rounded-lg"
-          : "rounded-md h-min w-[200px] shadow-[0_0_11px_-1px_rgba(0,0,0,0.75)]"
+          : "rounded-md h-full shadow-[0_0_11px_-1px_rgba(0,0,0,0.75)]"
       } ${!playing ? "flex items-center justify-center" : ""}`}
     >
       {playing ? (
@@ -23,11 +23,16 @@ const Player = ({ url, muted, playing, isActive }) => {
           ref={videoRef}
           autoPlay
           playsInline
-          muted={muted} // Важно
+          muted={muted} 
           style={{ transform: "scaleX(-1)", width: "100%", height: "100%" }}
         />
       ) : (
-        <UserSquare2 className="text-white" size={isActive ? 400 : 150} />
+        <div
+          className="flex items-center justify-center bg-gray-600 text-white rounded-full"
+          style={{ transform: "scaleX(-1)", width: "100%", height: "150px" }}
+        >
+          <span className="text-3xl font-bold">A</span>
+        </div>
       )}
 
       {!isActive &&

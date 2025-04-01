@@ -1,17 +1,35 @@
-import { useEffect, useState } from "react";
+/* eslint-disable @next/next/no-img-element */
+import { useEffect, useState, useRef } from "react";
 import { cloneDeep } from "lodash";
 import { useRouter } from "next/router";
+import axios from "axios";
 
 import { useSocket } from "@/context/socket";
 import { useWebSocket } from "@/context/websocket";
 import usePeer from "@/hooks/usePeer";
 import useMediaStream from "@/hooks/useMediaStream";
 import usePlayer from "@/hooks/usePlayer";
+import { useGame } from "@/context/game";
 
-import Player from "@/component/Player";
-import Bottom from "@/component/Bottom";
-import CopySection from "@/component/CopySection";
-import DrawingBoard from "@/component/DrawingBoard/DrawingBoard";
+import GameBoard from "@/components/GameBoard/GameBoard";
+import Player from "@/components/Player";
+import Bottom from "@/components/Bottom";
+import DeckModal from "@/components/Modal/Deck";
+import CardModal from "@/components/Modal/Card";
+import ObjectModal from '@/components/Modal/Object'
+import Action from '@/components/Action'
+
+import Cards from "@/icons/Cards";
+import Close from "@/icons/Close";
+import People from "@/icons/People";
+import { Menu } from "lucide-react";
+import More from "@/icons/More";
+import Link from "@/icons/Link";
+import Pause from "@/icons/Pause";
+import Leave from "@/icons/Leave";
+import Rules from "@/icons/Rules";
+import CardChoosedModal from "@/components/Modal/CardChoosed";
+
 
 const Room = () => {
   const socket = useSocket();
@@ -19,11 +37,11 @@ const Room = () => {
   const { roomId } = useRouter().query;
   const { peer, myId } = usePeer();
   const { stream } = useMediaStream();
-  const [messages, setMessages] = useState([]);
-  const [message, setMessage] = useState("");
+  const { gameData, setGameData } = useGame();
 
-  
-
+  const [creatorId, setCreatorId] = useState();
+  const [currentTurn, setCurrentTurn] = useState(null);
+  const [chipPositions, setChipPositions] = useState({});
   const {
     players,
     setPlayers,
@@ -37,6 +55,120 @@ const Room = () => {
   const [users, setUsers] = useState({});
   const [clientId, setClientId] = useState(null);
 
+  const [showCams, setShowCams] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deckModal, setIsDeckModalActive] = useState(false);
+  const [actionActive, setActionActive] = useState(false);
+  const [actionCoordinates, setActionCoordinates] = useState(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState(null);
+  const [cardChoosedModalActive, setCardChoosedModalActive] = useState(false)
+  const [chosenCardData, setChosenCardData] = useState(null)
+  const [cardModalPlayerId, setCardModalPlayerId] = useState(null)
+
+  const buttonRef = useRef(null);
+
+  const handleOpenAction = (event, playerId) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setActionCoordinates(rect);
+    setSelectedPlayerId(playerId);
+    setActionActive(true);
+  };
+
+  const [cardActive, setCardActive] = useState(false);
+  const [objectActive, setObjectActive] = useState(false);
+  const objects = [
+    '/objects/1.png',
+    '/objects/2.png',
+    '/objects/3.png',
+    '/objects/4.png',
+    '/objects/5.png',
+    '/objects/6.png',
+    '/objects/7.png',
+    '/objects/8.png'
+  ];
+  const handleSelectObject = (obj) => {
+    console.log('Выбран объект:', obj);
+  };
+
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [finished, setFinished] = useState(false);
+  
+  
+
+
+  const renderChips = () => {
+    const icons = [
+      <img key="chip" src="/chip.png" alt="chip" style={{ width: "30px", height: "30px" }} />
+    ];
+    const playerIcons = {};
+    Object.keys(players).forEach((playerId, index) => {
+      playerIcons[playerId] = icons[index % icons.length];
+    });
+  
+    return (
+      <div className="flex justify-center items-center gap-4 mb-4">
+        {Object.keys(chipPositions).map((playerId) => {
+          const pos = chipPositions[playerId];
+          return (
+            <div key={playerId} className="flex flex-col items-center">
+              <div className="flex items-center gap-2 flex-col">
+                {playerIcons[playerId] || "❓"}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    if (!roomId) return;
+  
+    axios
+      .get(`http://localhost:8000/api/v1/game/${roomId}`)
+      .then((response) => {
+        console.log("✅ Game data fetched:", response.data);
+        setGameData(response.data);
+        setCreatorId(response.data.creator_id);
+        console.log("myid in userids "+response.data.user_ids.includes(myId))
+        if (!response.data.user_ids.includes(myId)) {
+          return axios.patch(
+            `http://localhost:8000/api/v1/game/${roomId}/join`,
+            new URLSearchParams({ user_id: myId }),
+            { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+          );
+        }
+      })
+      .then((joinResponse) => {
+        if (joinResponse) {
+          console.log("✅ Successfully joined the game:", joinResponse.data);
+        }
+      })
+      .catch((error) => {
+        console.error("❌ Error:", error);
+      });
+  }, [myId, roomId, setGameData]);
+
+  useEffect(() => {
+    if (!gameData?.created_at) return;
+    const startTime = new Date(gameData.created_at).getTime();
+    const interval = setInterval(() => {
+      if (!paused && !finished) {
+        const now = new Date().getTime();
+        setElapsedTime(Math.floor((now - startTime) / 1000));
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [gameData, paused, finished]);
+
+  const formatTime = (seconds) => {
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  };
+
+  // подключение новых пользователей
   useEffect(() => {
     if (!socket || !peer || !stream) return;
 
@@ -56,6 +188,7 @@ const Room = () => {
     return () => socket.off("user-connected", handleUserConnected);
   }, [peer, setPlayers, socket, stream]);
 
+  // обработка событий видео/аудио
   useEffect(() => {
     if (!socket) return;
 
@@ -93,6 +226,7 @@ const Room = () => {
     };
   }, [players, setPlayers, socket, users]);
 
+  // обработка входящих звонков
   useEffect(() => {
     if (!peer || !stream) return;
 
@@ -109,47 +243,133 @@ const Room = () => {
     });
   }, [peer, setPlayers, stream]);
 
-
-  //ws
+  // ws client
   useEffect(() => {
     if (!roomId) return;
     let roomKey = `room_${roomId}_client_counter`;
-    let lastClientId = parseInt(localStorage.getItem(roomKey) || '0', 10);
+    let lastClientId = parseInt(localStorage.getItem(roomKey) || "0", 10);
     setClientId(lastClientId);
     localStorage.setItem(roomKey, lastClientId + 1);
   }, [roomId]);
 
+  // инициализация ws
   useEffect(() => {
     if (!roomId || clientId === null) return;
-  
-    ws.current = new WebSocket(`ws://localhost:8000/api/v1/websocket/ws/room/${roomId}/${clientId}`);
-  
-    ws.current.onopen = () => console.log('✅ Chat WebSocket connected');
-    ws.current.onclose = () => console.log('❌ Chat WebSocket disconnected');
-    ws.current.onerror = (err) => console.error('⚠️ Chat WS error:', err);
-  
+
+    ws.current = new WebSocket(`ws://34.45.189.191/api/v1/websocket/ws/room/${roomId}/${clientId}`);
+
+    ws.current.onopen = () => console.log("✅ Chat WebSocket connected");
+    ws.current.onclose = () => console.log("❌ Chat WebSocket disconnected");
+    ws.current.onerror = (err) => console.error("⚠️ Chat WS error:", err);
+
     ws.current.onmessage = (event) => {
+      let jsonString;
       try {
-        const parsed = JSON.parse(event.data);
-        setMessages((prev) => [
-          ...prev,
-          `${parsed.client_id === clientId ? 'You' : 'Client ' + parsed.client_id}: ${parsed.message}`
-        ]);
-      } catch {
-        setMessages((prev) => [...prev, event.data]);
+        const jsonMatch = event.data.match(/\{.*\}/);
+        jsonString = jsonMatch ? jsonMatch[0] : event.data;
+        const data = JSON.parse(jsonString);
+
+        if (data.type === "TURN_UPDATE") {
+          setCurrentTurn(data.payload);
+        }
+        if (data.type === "DRAG_MOVE") {
+          const { playerId, pos } = data.payload;
+          setChipPositions((prev) => ({
+            ...prev,
+            [playerId]: pos,
+          }));
+        }
+        if (data.type === "MOVE") {
+          const { playerId, move } = data.payload;
+          setChipPositions((prev) => ({
+            ...prev,
+            [playerId]: move,
+          }));
+          console.log(`Игрок ${playerId} переместил фишку в: строка ${move.row}, столбец ${move.col}`);
+        }
+        if (data.type === "SHOW_CARD_MODAL") {
+          setCardModalPlayerId(data.payload)
+          setCardActive(true)
+        }
+        if (data.type === "CARD_CHOSEN") {
+          setChosenCardData(data.payload)
+          setCardActive(false)
+          setCardChoosedModalActive(true)
+        }
+      } catch (error) {
+        console.log("received connection message", event.data);
       }
     };
-  
+
     return () => ws.current?.close();
   }, [roomId, clientId, ws]);
 
-  const sendMessage = () => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(message);
-      setMessages((prev) => [...prev, `You: ${message}`]);
-      setMessage('');
-    }
+  useEffect(() => {
+    const initialPositions = {};
+    Object.keys(players).forEach((playerId) => {
+      initialPositions[playerId] = { row: 0, col: 0 };
+    });
+    setChipPositions(initialPositions);
+  }, [players]);
+
+  useEffect(() => {
+    if (!stream || !myId) return;
+    setPlayers((prev) => ({
+      ...prev,
+      [myId]: { url: stream, muted: true, playing: true },
+    }));
+  }, [myId, setPlayers, stream]);
+
+  const handleChoosePlayer = () => {
+    ws.current.send(
+      JSON.stringify({
+        type: "TURN_UPDATE",
+        payload: selectedPlayerId,
+      })
+    );
+    setActionActive(false);
   };
+
+  const handleCellClick = (row, col) => {
+    if (myId !== currentTurn) return;
+    ws.current.send(
+      JSON.stringify({
+        type: "MOVE",
+        payload: {
+          playerId: myId,
+          move: { row, col },
+        },
+      })
+    );
+  };
+  const copyLink = () => {
+    const link = window.location.href;
+    navigator.clipboard.writeText(link)
+    setMenuOpen(false);
+  };
+
+  const pauseGame = () => {
+    setPaused(true);
+    setMenuOpen(false);
+  };
+
+  const finishGame = () => {
+    setFinished(true);
+    setPaused(true);
+    setMenuOpen(false);
+  };
+
+  const gameRules = () => {
+    setMenuOpen(false);
+  };
+
+  const handleCardIssue = (playerId) => {
+    ws.current.send(JSON.stringify({
+      type: "SHOW_CARD_MODAL",
+      payload: playerId
+    }))
+  }
+  
 
   useEffect(() => {
     if (!stream || !myId) return;
@@ -160,83 +380,180 @@ const Room = () => {
   }, [myId, setPlayers, stream]);
 
   return (
-    <div className="flex h-screen w-full bg-black">
-      {/* Video Chat Section */}
-      <div className="w-1/3 bg-gray-900 text-white flex flex-col p-4 gap-4 overflow-y-auto">
-        <h2 className="text-xl font-bold mb-2">Video Chat</h2>
+    <>
+      <div className="flex flex-col h-screen bg-indigo-950 p-6">
+        <div className="w-full mb-3 flex flex-col md:flex-row md:items-center md:justify-between">
 
-        {playerHighlighted && (
-          <Player
-            url={playerHighlighted.url}
-            muted={playerHighlighted.muted}
-            playing={playerHighlighted.playing}
-            isActive
-          />
-        )}
-
-      <Bottom
-        muted={playerHighlighted?.muted}
-        playing={playerHighlighted?.playing}
-        toggleAudio={toggleAudio}
-        toggleVideo={toggleVideo}
-        leaveRoom={leaveRoom}
-      />
-        {Object.keys(nonHighlightedPlayers).map((playerId) => {
-          const { url, muted, playing } = nonHighlightedPlayers[playerId];
-          return (
-            <Player
-              key={playerId}
-              url={url}
-              muted={muted}
-              playing={playing}
-              isActive={false}
-            />
-          );
-        })}
-
-        <CopySection roomId={roomId} />
-
-      </div>
-      {/* Chat Section */}
-      <div className="w-2/3 bg-white flex flex-col p-4 gap-4">
-          <h2 className="text-xl font-bold mb-2">Chat</h2>
-
-          <div className="flex flex-col gap-2 mb-4 max-h-[500px] overflow-y-auto bg-gray-800 p-4 rounded-lg">
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`flex ${msg.startsWith('You:') ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`p-3 rounded-lg max-w-[70%] ${
-                    msg.startsWith('You:') ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-200'
-                  }`}
-                >
-                  {msg}
-                </div>
-              </div>
-            ))}
+          <div className="order-1 md:order-2 flex justify-center mb-4 md:mb-0">
+            <div className="text-xl font-bold text-white">
+              {gameData?.title} <span className="text-xl font-bold text-[#FFD54C]">{formatTime(elapsedTime)}</span>
+            </div>
           </div>
 
-          <div className="flex gap-4">
-            <input
-              type="text"
-              className="flex-1 p-3 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Type your message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-            />
+          <div className="order-2 md:order-1 flex flex-row gap-4  items-center">
+            <div className="bg-orange-500 p-3 rounded-xl w-[50px] h-[50px] flex items-center justify-center">
+              {showCams ? (
+                <button className="w-full h-full flex items-center justify-center" onClick={() => setShowCams(false)}>
+                  <Close />
+                </button>
+              ) : (
+                <button className="w-full h-full flex items-center justify-center" onClick={() => setShowCams(true)}>
+                  <People />
+                </button>
+              )}
+            </div>
+            <div className="bg-[#4EB396] p-3 rounded-xl w-[50px] h-[50px] flex items-center justify-center">
+              <button className="w-full h-full flex items-center justify-center" onClick={() => setIsDeckModalActive(true)}>
+                <Cards />
+              </button>
+            </div>
+          </div>
+
+ 
+
+          <div className="order-3 relative md:ml-[66px]">
             <button
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition"
-              onClick={sendMessage}
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="bg-[#F0F0FF] p-3 rounded-xl w-[50px] h-[50px] flex items-center justify-center"
             >
-              Send
+              {menuOpen ? <Close stroke="black"/> : <Menu />}
             </button>
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-[rgba(255,_255,_255,_0.5)] text-white rounded-lg shadow-lg z-20">
+                <ul>
+                  <li
+                    onClick={copyLink}
+                    className="flex items-center gap-2 px-4 py-3 cursor-pointer rounded-t-lg"
+                  >
+                    <Link /> 
+                    <span>Скопировать ссылку</span>
+                  </li>
+                  <li
+                    onClick={pauseGame}
+                    className="flex items-center gap-2 px-4 py-3 cursor-pointer"
+                  >
+                    <Pause />
+                    <span>Приостановить игру</span>
+                  </li>
+                  <li
+                    onClick={gameRules}
+                    className="flex items-center gap-2 px-4 py-3 cursor-pointer"
+                  >
+                    <Rules />
+                    <span>Правила игры</span>
+                  </li>
+                  <li
+                    onClick={finishGame}
+                    className="flex items-center gap-2 px-4 py-3 cursor-pointer rounded-b-lg"
+                  >
+                    <Leave />
+                    <span>Завершить игру</span>
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
         </div>
 
-    </div>
+        <div className="flex flex-grow relative">
+          {showCams && (
+            <div className="absolute left-0 top-0 w-[250px] z-20 flex flex-col gap-2 bg-[#A6A7B9] p-4 rounded-[10px] max-h-[80vh] overflow-y-auto">
+              <div className="text-[#21244F] font-bold">
+                Участники ({Object.keys(players).length})
+              </div>
+              <div className="flex flex-col gap-2">
+                {playerHighlighted && (
+                  <div className="relative rounded-md overflow-hidden">
+                    <Player
+                      url={playerHighlighted.url}
+                      muted={playerHighlighted.muted}
+                      playing={playerHighlighted.playing}
+                      isActive
+                    />
+                    <div className="absolute bottom-5 text-white left-2 bg-black/50 px-2 py-1 rounded">
+                      Вы 
+                    </div>
+                    {myId === creatorId && (
+                      <button
+                        onClick={(e) => handleOpenAction(e, myId)}
+                        className="absolute top-3 right-2 bg-[#3C3585] text-white rounded w-6 h-6 flex justify-center items-center"
+                      >
+                        <More />
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {Object.keys(nonHighlightedPlayers).map((playerId) => {
+                  const { url, muted, playing } = nonHighlightedPlayers[playerId];
+                  return (
+                    <div key={playerId} className="relative rounded-md overflow-hidden w-full">
+                      <Player url={url} muted={muted} playing={playing} isActive={false} />
+                      <div className="absolute bottom-1 left-2 bg-black/50 px-2 py-1 rounded text-xs">
+                        Игрок {playerId}
+                      </div>
+                      {myId === creatorId && (
+                        <button
+                          onClick={(e) => handleOpenAction(e, playerId)}
+                          className="absolute top-3 right-1 bg-[#3C3585] text-white rounded w-6 h-6 flex justify-center items-center"
+                        >
+                          <More />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col items-center justify-center w-full">
+            <div className="flex items-center justify-center w-full mb-3">
+              <div className="flex justify-center md:max-w-[650px] aspect-squar">
+                <GameBoard
+                  field={gameData?.field}
+                  chipPositions={chipPositions}
+                  onCellClick={handleCellClick}
+                  players={players}
+                  currentTurn={currentTurn}
+                  ws={ws}
+                />
+              </div>
+            </div>
+
+            <div className="w-full flex flex-col items-center gap-4 mt-4">
+              <div className="bg-[#FFFFFF33] text-white px-4 py-2 rounded-md">
+                {myId === currentTurn ? "Ваш ход" : `Ход игрока ${currentTurn ? currentTurn : "не выбран"}`}
+              </div>
+              <div className="flex gap-4">
+                <Bottom 
+                  muted={playerHighlighted?.muted} 
+                  playing={playerHighlighted?.playing} 
+                  toggleAudio={toggleAudio} 
+                  toggleVideo={toggleVideo} 
+                  leaveRoom={leaveRoom} 
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <DeckModal active={deckModal} setActive={setIsDeckModalActive} players={gameData?.user_ids}/>
+      <CardModal active={cardActive} myId={myId} playerId={cardModalPlayerId} setActive={setCardActive} ws={ws}/>
+      <CardChoosedModal active={cardChoosedModalActive} setActive={setCardChoosedModalActive} cardData={chosenCardData} playerId={cardModalPlayerId}/>
+      <ObjectModal active={objectActive} setActive={setObjectActive} objects={objects} onSelect={handleSelectObject}/>
+      {actionActive && (
+        <Action 
+          active={actionActive} 
+          coordinates={actionCoordinates} 
+          setActive={setActionActive}
+          id={selectedPlayerId}
+          onMoveChip={handleChoosePlayer}
+          onCardIssue={handleCardIssue}
+          onObjectPick={() => setObjectActive(true)}
+        />
+      )}
+    </>
   );
 };
 
