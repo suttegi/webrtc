@@ -242,7 +242,7 @@ const Room = () => {
   useEffect(() => {
     if (!roomId || clientId === null) return;
 
-    ws.current = new WebSocket(`ws://localhost:8000/api/v1/websocket/ws/room/${roomId}/${clientId}`);
+    ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_URL}/api/v1/websocket/ws/room/${roomId}/${clientId}`);
 
     ws.current.onopen = () => console.log("✅ Chat WebSocket connected");
     ws.current.onclose = () => console.log("❌ Chat WebSocket disconnected");
