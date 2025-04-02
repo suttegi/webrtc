@@ -1,5 +1,6 @@
-/* eslint-disable react/jsx-key */
 import React, { useState, useRef, useEffect } from "react";
+import Image from 'next/image';
+
 
 const GameBoard = ({ chipPositions, players, currentTurn, ws, field, chips }) => {
   const boardRef = useRef(null);
@@ -13,7 +14,7 @@ const GameBoard = ({ chipPositions, players, currentTurn, ws, field, chips }) =>
     }
   }, [boardRef.current]);
 
-  const icons = [<img src={chips} alt="chip" className="w-8 h-8" />];
+  const icons = [<Image key="chip-icon" src={chips} alt="chip" className="w-8 h-8" />];
   const playerIcons = Object.fromEntries(
     Object.keys(players).map((playerId) => [playerId, icons[0]])
   );
@@ -154,7 +155,7 @@ const GameBoard = ({ chipPositions, players, currentTurn, ws, field, chips }) =>
         title="PDF Viewer"
       />
       ) : (
-        <img
+        <Image
           src={field}
           alt="meow"
           style={{ display: "block" }}

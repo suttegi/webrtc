@@ -1,6 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 import React, {useState} from 'react';
 import CloseSquare from '@/icons/CloseSquare';
+import Image from 'next/image';
+
 
 const CardModal = ({
     active,

@@ -1,7 +1,8 @@
-/* eslint-disable @next/next/no-img-element */
 import React, {useState} from 'react';
 import { ChevronDown } from "lucide-react"; 
 import CloseSquare from '@/icons/CloseSquare';
+import Image from 'next/image';
+
 
 
 
@@ -56,7 +57,7 @@ const DeckModal = ({active, setActive, players, gameData }) => {
             className="bg-white rounded-lg shadow flex flex-col md:flex-row items-start md:items-center gap-4 p-4"
             >
             <div className="w-16 flex-shrink-0">
-              <img
+              <Image
                 src={deck.cards[0].back}
                 alt={deck.title}
                 className="w-full h-full object-cover rounded-md"

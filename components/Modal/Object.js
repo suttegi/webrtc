@@ -1,6 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 import React, {useState} from 'react';
 import CloseSquare from '@/icons/CloseSquare';
+import Image from 'next/image';
+
 
 const ObjectModal = ({
     active,
@@ -50,7 +51,7 @@ const ObjectModal = ({
                   isSelected ? 'border-[#5D4FBA]' : 'border-transparent'
                 }`}
               >
-                <img
+                <Image
                   src={objects}
                   alt={alt}
                   className="w-full h-auto object-contain"

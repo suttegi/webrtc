@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 import { useEffect, useState, useRef } from "react";
 import { cloneDeep } from "lodash";
 import { useRouter } from "next/router";

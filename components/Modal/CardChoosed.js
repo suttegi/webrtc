@@ -1,6 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 import React, {useState} from 'react';
 import CloseSquare from '@/icons/CloseSquare';
+import Image from 'next/image';
+
 
 const CardChoosedModal = ({
     active,
@@ -26,7 +27,7 @@ const CardChoosedModal = ({
         </div>
 
         <div className='bg-[#F8F9FC] p-4 w-60 rounded-2xl'>
-                <img
+                <Image
                 src={card_body}
                 alt="card"
                 className="w-full object-cover rounded"

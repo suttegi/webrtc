@@ -1,6 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 import React, {useState} from 'react';
 import CloseSquare from '@/icons/CloseSquare';
+import Image from 'next/image';
+
 
 const CardModal = ({
     active,
@@ -45,7 +46,7 @@ const CardModal = ({
       <div className='bg-[#F8F9FC] p-4 rounded-2xl'>
         <div className="grid grid-cols-5 gap-4 max-h-[500px] overflow-y-auto">
           {cardsArray.map((_, index) => (
-            <img
+            <Image
               key={index}
               src={card_back}
               alt="card"
