@@ -564,7 +564,7 @@ const Room = () => {
               <div className="flex justify-center md:max-w-[650px] aspect-squar">
                 <GameBoard
                   field={gameData?.field_path}
-                  chips={gameData?.chips}
+                  chips={gameData?.chips[0]}
                   chipPositions={chipPositions}
                   onCellClick={handleCellClick}
                   players={players}

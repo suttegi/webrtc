@@ -35,7 +35,6 @@ const DeckModal = ({active, setActive, players, gameData }) => {
   
   
   const decks = gameData?.decks || [];
-  console.log(decks)
 
 
   if(!active) return null;
@@ -60,6 +59,9 @@ const DeckModal = ({active, setActive, players, gameData }) => {
               <Image
                 src={deck.cards[0].back}
                 alt={deck.title}
+                width={0}
+                height={0}
+                sizes='100vw'
                 className="w-full h-full object-cover rounded-md"
               />
             </div>

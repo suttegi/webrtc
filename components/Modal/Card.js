@@ -50,6 +50,9 @@ const CardModal = ({
               key={index}
               src={card_back}
               alt="card"
+              width={0}
+              height={0}
+              sizes='100vw'
               className={`w-full object-cover rounded ${canSelectCard ? 'cursor-pointer hover:opacity-80' : 'opacity-50'}`}
               onClick={() => handleCardClick(index)}
             />

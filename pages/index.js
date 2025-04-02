@@ -1,3 +1,4 @@
+'use client'
 import { Mic, Video, PhoneOff, MicOff, VideoOff } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';

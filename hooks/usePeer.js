@@ -18,7 +18,6 @@ const usePeer = () => {
         const Peer = (await import('peerjs')).default;
         const storedPeerId = localStorage.getItem("peerId")
         const userId = localStorage.getItem("user_id");
-        console.log(userId)
         const myPeer = userId ? new Peer(userId) : new Peer();
         // const myPeer = storedPeerId ? new Peer(storedPeerId) : new Peer();
 

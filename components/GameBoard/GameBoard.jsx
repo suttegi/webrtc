@@ -13,8 +13,16 @@ const GameBoard = ({ chipPositions, players, currentTurn, ws, field, chips }) =>
       setBoardWidth(boardRef.current.offsetWidth);
     }
   }, [boardRef.current]);
-
-  const icons = [<Image key="chip-icon" src={chips} alt="chip" className="w-8 h-8" />];
+  
+  const icons = [
+    <Image
+      src={chips}
+      key="chip-icon"
+      alt="chip"
+      width={32}
+      height={32}
+    />
+  ];
   const playerIcons = Object.fromEntries(
     Object.keys(players).map((playerId) => [playerId, icons[0]])
   );
@@ -83,7 +91,6 @@ const GameBoard = ({ chipPositions, players, currentTurn, ws, field, chips }) =>
 
   useEffect(() => {
     if (dragging) {
-      // добавляем обработчики как для мыши, так и для touch-событий
       window.addEventListener("mousemove", handleMove);
       window.addEventListener("mouseup", handleEnd);
       window.addEventListener("touchmove", handleMove);
@@ -105,12 +112,9 @@ const GameBoard = ({ chipPositions, players, currentTurn, ws, field, chips }) =>
     };
   }, [dragging]);
 
-  // Вычисляем общее количество игроков (фишек)
   const playerIds = Object.keys(players);
   const chipCount = playerIds.length;
-  // Фиксированный шаг для размещения фишек
   const step = 50;
-  // Вычисляем начальное смещение для центрирования ряда фишек
   const leftStart = (boardWidth - chipCount * step) / 2;
 
 
@@ -158,7 +162,10 @@ const GameBoard = ({ chipPositions, players, currentTurn, ws, field, chips }) =>
         <Image
           src={field}
           alt="meow"
-          style={{ display: "block" }}
+          width={0}
+          height={0}
+          sizes="100vw"
+          style={{ display: "block", width: '100%', height: 'auto' }}
           draggable={false}
         />
       )}
