@@ -1,0 +1,11 @@
+import React from 'react'
+
+const Pause = ({ fill = "white", ...props }) => {
+  return (
+    <svg width="8" height="10" viewBox="0 0 8 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M0 0H3V10H0V0ZM5 0H8V10H5V0Z" fill={fill}/>
+</svg>
+  )
+}
+
+export default Pause

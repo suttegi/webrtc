@@ -11,7 +11,11 @@ const useMediaStream = () => {
         (async function initStream() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: true,
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        sampleRate: 44100
+                    },
                     video: true
                 })
                 console.log("setting your stream")

@@ -3,25 +3,29 @@ import { io } from "socket.io-client";
 
 const SocketContext = createContext(null);
 
-export const useSocket = () => {
-    const socket = useContext(SocketContext)
-    return socket
-}
+export const useSocket = () => useContext(SocketContext);
 
-export const SocketProvider = (props) => {
-  const { children } = props;
+export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    const connection = io();
-    console.log("socket connection", connection)
-    setSocket(connection);
-  }, []);
+    // Стартуем API, если надо
+    fetch('/api/socket').then(() => {
+      const connection = io(); // Добавь сюда path если указал на сервере
+      console.log("✅ Socket connection established", connection);
+      setSocket(connection);
 
-  socket?.on('connect_error', async (err) => {
-    console.log("Error establishing socket", err)
-    await fetch('/api/socket')
-  })
+      connection.on('connect_error', (err) => {
+        console.log("🚨 Error establishing socket", err);
+      });
+
+      // Clean up при размонтировании
+      return () => {
+        console.log("🧹 Cleaning up socket");
+        connection.disconnect();
+      };
+    });
+  }, []);
 
   return (
     <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
