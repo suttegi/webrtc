@@ -1,13 +1,14 @@
 version: '3.8'
 
 services:
-  frontend:
+  app:
+    container_name: webrtc
     build: .
     ports:
       - "3000:3000"
-    volumes:
-      - .:/app
-      - /app/node_modules
     environment:
       - NODE_ENV=production
-    command: ["npm", "run", "serve"]
+    volumes:
+      - .:/src
+      - /src/node_modules
+    command: ["npm", "start"]
