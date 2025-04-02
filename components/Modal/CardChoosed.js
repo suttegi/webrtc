@@ -7,6 +7,7 @@ const CardChoosedModal = ({
     setActive,
     cardData,
     playerId,
+    card_body
   }) => {
   if(!active) return null;
   return (
@@ -26,7 +27,7 @@ const CardChoosedModal = ({
 
         <div className='bg-[#F8F9FC] p-4 w-60 rounded-2xl'>
                 <img
-                src="/card_back.png"
+                src={card_body}
                 alt="card"
                 className="w-full object-cover rounded"
                 />

@@ -25,7 +25,7 @@ const usePlayer = (myId, roomId, peer) => {
         console.log("I toggled my audio")
         setPlayers((prev) => {
             const copy = cloneDeep(prev)
-            copy[myId].muted = !copy[myId].muted
+            copy[myId].muted = !copy[myId]?.muted
             return {...copy}
         })
         socket.emit('user-toggle-audio', myId, roomId)

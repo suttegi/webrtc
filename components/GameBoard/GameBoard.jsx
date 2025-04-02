@@ -1,7 +1,7 @@
 /* eslint-disable react/jsx-key */
 import React, { useState, useRef, useEffect } from "react";
 
-const GameBoard = ({ chipPositions, players, currentTurn, ws }) => {
+const GameBoard = ({ chipPositions, players, currentTurn, ws, field, chips }) => {
   const boardRef = useRef(null);
   const [boardWidth, setBoardWidth] = useState(0);
   const [dragging, setDragging] = useState(null);
@@ -13,7 +13,7 @@ const GameBoard = ({ chipPositions, players, currentTurn, ws }) => {
     }
   }, [boardRef.current]);
 
-  const icons = [<img src="/chip.png" alt="chip" className="w-8 h-8" />];
+  const icons = [<img src={chips} alt="chip" className="w-8 h-8" />];
   const playerIcons = Object.fromEntries(
     Object.keys(players).map((playerId) => [playerId, icons[0]])
   );
@@ -112,6 +112,10 @@ const GameBoard = ({ chipPositions, players, currentTurn, ws }) => {
   // Вычисляем начальное смещение для центрирования ряда фишек
   const leftStart = (boardWidth - chipCount * step) / 2;
 
+
+  const isPDF = field && field.toLowerCase().endsWith(".pdf");
+
+
   return (
     <div
       ref={boardRef}
@@ -143,7 +147,20 @@ const GameBoard = ({ chipPositions, players, currentTurn, ws }) => {
           );
         })}
       </div>
-      <img src="/meow.png" alt="Meow" style={{ display: "block" }} draggable={false} />
+      {isPDF ? (
+        <iframe
+        src={`${field}#toolbar=0&navpanes=0&scrollbar=0`}
+        style={{ display: "block", width: "100%", height: "100%", border: "none" }}
+        title="PDF Viewer"
+      />
+      ) : (
+        <img
+          src={field}
+          alt="meow"
+          style={{ display: "block" }}
+          draggable={false}
+        />
+      )}
       {dragging && dragPosition && (
         <div
           style={{

@@ -8,7 +8,8 @@ const CardModal = ({
     playerId,
     myId,
     cardsCount = 64,
-    ws
+    ws,
+    card_back
   }) => {
   const cardsArray = Array(cardsCount).fill(null);
   if(!active) return null;
@@ -46,7 +47,7 @@ const CardModal = ({
           {cardsArray.map((_, index) => (
             <img
               key={index}
-              src="/card_back.png"
+              src={card_back}
               alt="card"
               className={`w-full object-cover rounded ${canSelectCard ? 'cursor-pointer hover:opacity-80' : 'opacity-50'}`}
               onClick={() => handleCardClick(index)}

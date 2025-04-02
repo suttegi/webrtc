@@ -5,37 +5,16 @@ import CloseSquare from '@/icons/CloseSquare';
 
 
 
-const decksData = [
-  {
-    id: 1,
-    title: "Название колоды",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
-    imageUrl: "/deck.png", 
-  },
-  {
-    id: 2,
-    title: "Название колоды",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
-    imageUrl: "/deck.png",
-  },
-  {
-    id: 3,
-    title: "Название колоды",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
-    imageUrl: "/deck.png",
-  },
-];
 
 
-const DeckModal = ({active, setActive, players }) => {
+
+const DeckModal = ({active, setActive, players, gameData }) => {
   const [selectedPlayers, setSelectedPlayers] = useState({});
   
   const [openDropdown, setOpenDropdown] = useState(null);
   
   const handleSelectPlayer = (deckId, playerName) => {
+    console.log(playerName + ":" + deckId)
     setSelectedPlayers((prev) => ({
       ...prev,
       [deckId]: playerName,
@@ -49,9 +28,15 @@ const DeckModal = ({active, setActive, players }) => {
       alert("Сначала выберите игрока");
       return;
     }
+    onAssignDeck(deckId, chosenPlayer);
     alert(`Раздали колоду (ID: ${deckId}) игроку ${chosenPlayer}`);
   };
   
+  
+  const decks = gameData?.decks || [];
+  console.log(decks)
+
+
   if(!active) return null;
   return (
     <div className={'w-screen h-screen bg-[rgba(60,_53,_133,_0.5)] backdrop-filter backdrop-blur-[2px] fixed top-0 left-0 flex items-center justify-center z-50'}>
@@ -65,14 +50,14 @@ const DeckModal = ({active, setActive, players }) => {
             <CloseSquare />
           </button>
         </div>
-      {decksData.map((deck) => (
+      {decks.map((deck) => (
           <div
             key={deck.id}
             className="bg-white rounded-lg shadow flex flex-col md:flex-row items-start md:items-center gap-4 p-4"
             >
             <div className="w-16 flex-shrink-0">
               <img
-                src={deck.imageUrl}
+                src={deck.cards[0].back}
                 alt={deck.title}
                 className="w-full h-full object-cover rounded-md"
               />

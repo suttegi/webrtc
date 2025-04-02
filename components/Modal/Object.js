@@ -51,7 +51,7 @@ const ObjectModal = ({
                 }`}
               >
                 <img
-                  src={src}
+                  src={objects}
                   alt={alt}
                   className="w-full h-auto object-contain"
                 />

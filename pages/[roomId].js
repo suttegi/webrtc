@@ -31,6 +31,11 @@ import Rules from "@/icons/Rules";
 import CardChoosedModal from "@/components/Modal/CardChoosed";
 
 
+//деки
+//по юзер айди получать юзернейм
+//создать планшет для каждого юзера
+
+
 const Room = () => {
   const socket = useSocket();
   const ws = useWebSocket();
@@ -63,7 +68,13 @@ const Room = () => {
   const [selectedPlayerId, setSelectedPlayerId] = useState(null);
   const [cardChoosedModalActive, setCardChoosedModalActive] = useState(false)
   const [chosenCardData, setChosenCardData] = useState(null)
-  const [cardModalPlayerId, setCardModalPlayerId] = useState(null)
+  const [cardModalPlayerId, setCardModalPlayerId] = useState(null);
+  const [assignedDecks, setAssignedDecks] = useState({});
+
+  const assignedDeckId = assignedDecks[cardModalPlayerId];
+  const assignedDeck = gameData?.decks.find(deck => deck.id === assignedDeckId);
+
+
 
   const buttonRef = useRef(null);
 
@@ -76,16 +87,6 @@ const Room = () => {
 
   const [cardActive, setCardActive] = useState(false);
   const [objectActive, setObjectActive] = useState(false);
-  const objects = [
-    '/objects/1.png',
-    '/objects/2.png',
-    '/objects/3.png',
-    '/objects/4.png',
-    '/objects/5.png',
-    '/objects/6.png',
-    '/objects/7.png',
-    '/objects/8.png'
-  ];
   const handleSelectObject = (obj) => {
     console.log('Выбран объект:', obj);
   };
@@ -93,48 +94,33 @@ const Room = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [paused, setPaused] = useState(false);
   const [finished, setFinished] = useState(false);
-  
-  
 
-
-  const renderChips = () => {
-    const icons = [
-      <img key="chip" src="/chip.png" alt="chip" style={{ width: "30px", height: "30px" }} />
-    ];
-    const playerIcons = {};
-    Object.keys(players).forEach((playerId, index) => {
-      playerIcons[playerId] = icons[index % icons.length];
-    });
-  
-    return (
-      <div className="flex justify-center items-center gap-4 mb-4">
-        {Object.keys(chipPositions).map((playerId) => {
-          const pos = chipPositions[playerId];
-          return (
-            <div key={playerId} className="flex flex-col items-center">
-              <div className="flex items-center gap-2 flex-col">
-                {playerIcons[playerId] || "❓"}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
 
   useEffect(() => {
     if (!roomId) return;
   
     axios
-      .get(`http://localhost:8000/api/v1/game/${roomId}`)
+      // .get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/game/${roomId}`)
+      // .then((response) => {
+      //   console.log("✅ Game data fetched:", response.data);
+    axios
+      .get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/game`, {
+        params: { user_id: "3f49cf0e-712a-4ade-b5bb-eaf77d8d72ce" }
+      })
       .then((response) => {
         console.log("✅ Game data fetched:", response.data);
-        setGameData(response.data);
-        setCreatorId(response.data.creator_id);
+        const game = response.data.find(game => game.id === roomId);
+        if (!game) {
+          throw new Error("Game not found");
+        }
+        console.log("✅ Game data fetched:", game);
+
+        setGameData(game);
+        setCreatorId(game.creator_id);
         console.log("myid in userids "+response.data.user_ids.includes(myId))
         if (!response.data.user_ids.includes(myId)) {
           return axios.patch(
-            `http://localhost:8000/api/v1/game/${roomId}/join`,
+            `${process.env.NEXT_PUBLIC_API_URL}/api/v1/game/${roomId}/join`,
             new URLSearchParams({ user_id: myId }),
             { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
           );
@@ -256,7 +242,7 @@ const Room = () => {
   useEffect(() => {
     if (!roomId || clientId === null) return;
 
-    ws.current = new WebSocket(`ws://34.45.189.191/api/v1/websocket/ws/room/${roomId}/${clientId}`);
+    ws.current = new WebSocket(`ws://localhost:8000/api/v1/websocket/ws/room/${roomId}/${clientId}`);
 
     ws.current.onopen = () => console.log("✅ Chat WebSocket connected");
     ws.current.onclose = () => console.log("❌ Chat WebSocket disconnected");
@@ -382,7 +368,74 @@ const Room = () => {
   return (
     <>
       <div className="flex flex-col h-screen bg-indigo-950 p-6">
-        <div className="w-full mb-3 flex flex-col md:flex-row md:items-center md:justify-between">
+        <div className=" md:hidden flex flex-col">
+          <div>
+            <div className="text-xl font-bold text-white">
+                {gameData?.title} <span className="text-xl font-bold text-[#FFD54C]">{formatTime(elapsedTime)}</span>
+              </div>
+          </div>
+          <div className="flex flex-row">
+          <div className="bg-orange-500 p-3 rounded-xl w-[50px] h-[50px] flex items-center justify-center">
+              {showCams ? (
+                <button className="w-full h-full flex items-center justify-center" onClick={() => setShowCams(false)}>
+                  <Close />
+                </button>
+              ) : (
+                <button className="w-full h-full flex items-center justify-center" onClick={() => setShowCams(true)}>
+                  <People />
+                </button>
+              )}
+            </div>
+            <div className="bg-[#4EB396] p-3 rounded-xl w-[50px] h-[50px] flex items-center justify-center">
+              <button className="w-full h-full flex items-center justify-center" onClick={() => setIsDeckModalActive(true)}>
+                <Cards />
+              </button>
+            </div>
+            <div className="order-3 relative md:ml-[66px]">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="bg-[#F0F0FF] p-3 rounded-xl w-[50px] h-[50px] flex items-center justify-center"
+            >
+              {menuOpen ? <Close stroke="black"/> : <Menu />}
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-[rgba(255,_255,_255,_0.5)] text-white rounded-lg shadow-lg z-20">
+                <ul>
+                  <li
+                    onClick={copyLink}
+                    className="flex items-center gap-2 px-4 py-3 cursor-pointer rounded-t-lg"
+                  >
+                    <Link /> 
+                    <span>Скопировать ссылку</span>
+                  </li>
+                  <li
+                    onClick={pauseGame}
+                    className="flex items-center gap-2 px-4 py-3 cursor-pointer"
+                  >
+                    <Pause />
+                    <span>Приостановить игру</span>
+                  </li>
+                  <li
+                    onClick={gameRules}
+                    className="flex items-center gap-2 px-4 py-3 cursor-pointer"
+                  >
+                    <Rules />
+                    <span>Правила игры</span>
+                  </li>
+                  <li
+                    onClick={finishGame}
+                    className="flex items-center gap-2 px-4 py-3 cursor-pointer rounded-b-lg"
+                  >
+                    <Leave />
+                    <span>Завершить игру</span>
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+          </div>
+        </div>
+        <div className="hidden md:flex w-full mb-3 md:items-center md:justify-between">
 
           <div className="order-1 md:order-2 flex justify-center mb-4 md:mb-0">
             <div className="text-xl font-bold text-white">
@@ -511,7 +564,8 @@ const Room = () => {
             <div className="flex items-center justify-center w-full mb-3">
               <div className="flex justify-center md:max-w-[650px] aspect-squar">
                 <GameBoard
-                  field={gameData?.field}
+                  field={gameData?.field_path}
+                  chips={gameData?.chips}
                   chipPositions={chipPositions}
                   onCellClick={handleCellClick}
                   players={players}
@@ -538,10 +592,12 @@ const Room = () => {
           </div>
         </div>
       </div>
-      <DeckModal active={deckModal} setActive={setIsDeckModalActive} players={gameData?.user_ids}/>
-      <CardModal active={cardActive} myId={myId} playerId={cardModalPlayerId} setActive={setCardActive} ws={ws}/>
-      <CardChoosedModal active={cardChoosedModalActive} setActive={setCardChoosedModalActive} cardData={chosenCardData} playerId={cardModalPlayerId}/>
-      <ObjectModal active={objectActive} setActive={setObjectActive} objects={objects} onSelect={handleSelectObject}/>
+      <DeckModal active={deckModal} setActive={setIsDeckModalActive} players={gameData?.user_ids} gameData={gameData} onAssignDeck={(deckId, playerId) => {
+    setAssignedDecks(prev => ({ ...prev, [playerId]: deckId }));
+  }}/>
+      <CardModal active={cardActive} myId={myId} playerId={cardModalPlayerId} setActive={setCardActive} ws={ws} card_back={assignedDeck ? assignedDeck.cards[0].back : gameData?.decks[0].cards[0].back}/>
+      <CardChoosedModal active={cardChoosedModalActive} setActive={setCardChoosedModalActive} cardData={chosenCardData} playerId={cardModalPlayerId} card_body={gameData?.decks[0].cards[0].back}/>
+      <ObjectModal active={objectActive} setActive={setObjectActive} objects={gameData?.game_objects[0].image} onSelect={handleSelectObject} />
       {actionActive && (
         <Action 
           active={actionActive} 
