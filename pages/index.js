@@ -58,15 +58,17 @@ export default function Home() {
 
   console.log(process.env.NEXT_PUBLIC_API_URL);
 
-  // useEffect(() => {
-  //   navigator.mediaDevices.enumerateDevices().then((devices) => {
-  //     const videoDevices = devices.filter((device) => device.kind === "videoinput");
-  //     setCameras(videoDevices);
-  //     if (videoDevices.length > 0) {
-  //       setSelectedCamera(videoDevices[0].deviceId);
-  //     }
-  //   });
-  // }, []);
+  useEffect(() => {
+    if (typeof window !== "undefined" && navigator.mediaDevices) {
+      navigator.mediaDevices.enumerateDevices().then((devices) => {
+        const videoDevices = devices.filter((device) => device.kind === "videoinput");
+        setCameras(videoDevices);
+      }).catch((error) => {
+        console.error("Error accessing media devices", error);
+      });
+    }
+  }, []);
+  
 
   useEffect(() => {
     if (initialStream && !localStream) {
@@ -196,7 +198,7 @@ export default function Home() {
           onChange={(e) => setRoomId(e?.target?.value)}
         />
       </div>
-      {/* <p>Выберите камеру</p>
+      <p>Выберите камеру</p>
       <div className="hidden sm:flex flex-col sm:flex-row gap-4 w-full">
         <select
           className="px-4 py-3 bg-indigo-950 rounded-md border border-white flex-1 focus:outline-none focus:ring-2 focus:ring-orange-400"
@@ -213,7 +215,7 @@ export default function Home() {
         >
           Войти
         </button>
-      </div> */}
+      </div>
     </div>
   </div>
 </div>
