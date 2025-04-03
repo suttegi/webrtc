@@ -6,23 +6,23 @@ import useMediaStream from '@/hooks/useMediaStream';
 import usePeer from '@/hooks/usePeer';
 
 
-function parseJwt(token) {
-  try {
-    const base64Url = token.split(".")[1];
-    if (!base64Url) return null;
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error("Error parsing JWT:", error);
-    return null;
-  }
-}
+// function parseJwt(token) {
+//   try {
+//     const base64Url = token.split(".")[1];
+//     if (!base64Url) return null;
+//     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+//     const jsonPayload = decodeURIComponent(
+//       atob(base64)
+//         .split("")
+//         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+//         .join("")
+//     );
+//     return JSON.parse(jsonPayload);
+//   } catch (error) {
+//     console.error("Error parsing JWT:", error);
+//     return null;
+//   }
+// }
 
 
 export default function Home() {
@@ -38,23 +38,23 @@ export default function Home() {
   const [cameras, setCameras] = useState([]);
   const [selectedCamera, setSelectedCamera] = useState("");
 
-  useEffect(() => {
-    const getCookie = (name) => {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop().split(";").shift();
-      return null;
-    };
+  // useEffect(() => {
+  //   const getCookie = (name) => {
+  //     const value = `; ${document.cookie}`;
+  //     const parts = value.split(`; ${name}=`);
+  //     if (parts.length === 2) return parts.pop().split(";").shift();
+  //     return null;
+  //   };
 
-    const authToken = getCookie("auth_token");
-    if (authToken) {
-      localStorage.setItem("auth_token", authToken);
-      const parsed = parseJwt(authToken);
-      if (parsed && parsed.user_id) {
-        localStorage.setItem("user_id", parsed.user_id);
-      }
-    }
-  }, []);
+  //   const authToken = getCookie("auth_token");
+  //   if (authToken) {
+  //     localStorage.setItem("auth_token", authToken);
+  //     const parsed = parseJwt(authToken);
+  //     if (parsed && parsed.user_id) {
+  //       localStorage.setItem("user_id", parsed.user_id);
+  //     }
+  //   }
+  // }, []);
 
   console.log(process.env.NEXT_PUBLIC_API_URL);
 
