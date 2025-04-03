@@ -9,25 +9,27 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    // Стартуем API, если надо
-    fetch('/api/socket').then(() => {
-      const connection = io(); // Добавь сюда path если указал на сервере
-      console.log("✅ Socket connection established", connection);
-      setSocket(connection);
+    const connection = io(`${process.env.NEXT_PUBLIC_IO_URL}`, { transports: ["websocket"] });
 
-      connection.on('connect_error', (err) => {
-        console.log("🚨 Error establishing socket", err);
-      });
+    console.log("Socket io connection established", connection);
 
-      // Clean up при размонтировании
-      return () => {
-        console.log("🧹 Cleaning up socket");
-        connection.disconnect();
-      };
+    setSocket(connection);
+
+    connection.on('connect_error', (err) => {
+      console.log("Error establishing socket", err);
     });
+
+    return () => {
+      if (connection && connection.disconnect) {
+        console.log("Cleaning up socket");
+        connection.disconnect();
+      }
+    };
   }, []);
 
   return (
-    <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
+    <SocketContext.Provider value={socket}>
+      {children}
+    </SocketContext.Provider>
   );
 };
