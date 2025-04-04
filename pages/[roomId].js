@@ -1,3 +1,4 @@
+'use client'
 import { useEffect, useState, useRef } from "react";
 import { cloneDeep } from "lodash";
 import { useRouter } from "next/router";
@@ -28,12 +29,6 @@ import Pause from "@/icons/Pause";
 import Leave from "@/icons/Leave";
 import Rules from "@/icons/Rules";
 import CardChoosedModal from "@/components/Modal/CardChoosed";
-
-
-//деки
-//по юзер айди получать юзернейм
-//создать планшет для каждого юзера
-
 
 const Room = () => {
   const socket = useSocket();
@@ -71,11 +66,8 @@ const Room = () => {
   const [assignedDecks, setAssignedDecks] = useState({});
 
   const assignedDeckId = assignedDecks[cardModalPlayerId];
-  const assignedDeck = gameData?.decks.find(deck => deck.id === assignedDeckId);
+  const assignedDeck = gameData?.decks?.find(deck => deck.id === assignedDeckId);
 
-
-
-  const buttonRef = useRef(null);
 
   const handleOpenAction = (event, playerId) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -102,18 +94,6 @@ const Room = () => {
       .get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/game/${roomId}`)
       .then((response) => {
         console.log("✅ Game data fetched:", response.data);
-    // axios
-    //   .get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/game`, {
-    //     params: { user_id: "3f49cf0e-712a-4ade-b5bb-eaf77d8d72ce" }
-    //   })
-    //   .then((response) => {
-    //     console.log("✅ Game data fetched:", response.data);
-    //     const game = response.data.find(game => game.id === roomId);
-    //     if (!game) {
-    //       throw new Error("Game not found");
-    //     }
-    //     console.log("✅ Game data fetched:", game);
-
         setGameData(response.data);
         setCreatorId(response.data.creator_id);
         console.log("myid in userids "+response.data.user_ids.includes(myId))
@@ -134,6 +114,7 @@ const Room = () => {
         console.error("❌ Error:", error);
       });
   }, [myId, roomId, setGameData]);
+
 
   useEffect(() => {
     if (!gameData?.created_at) return;
@@ -243,9 +224,9 @@ const Room = () => {
 
     ws.current = new WebSocket(`${process.env.NEXT_PUBLIC_WS_URL}/api/v1/websocket/ws/room/${roomId}/${clientId}`);
 
-    ws.current.onopen = () => console.log("✅ Chat WebSocket connected");
-    ws.current.onclose = () => console.log("❌ Chat WebSocket disconnected");
-    ws.current.onerror = (err) => console.error("⚠️ Chat WS error:", err);
+    ws.current.onopen = () => console.log("Chat WebSocket connected");
+    ws.current.onclose = () => console.log("Chat WebSocket disconnected");
+    ws.current.onerror = (err) => console.error("Chat WS error:", err);
 
     ws.current.onmessage = (event) => {
       let jsonString;
@@ -363,6 +344,11 @@ const Room = () => {
       [myId]: { url: stream, muted: true, playing: true },
     }));
   }, [myId, setPlayers, stream]);
+
+
+  if (!gameData) {
+    return <div>Загрузка...</div>;
+  }
 
   return (
     <>
@@ -594,9 +580,36 @@ const Room = () => {
       <DeckModal active={deckModal} setActive={setIsDeckModalActive} players={gameData?.user_ids} gameData={gameData} onAssignDeck={(deckId, playerId) => {
     setAssignedDecks(prev => ({ ...prev, [playerId]: deckId }));
   }}/>
-      <CardModal active={cardActive} myId={myId} playerId={cardModalPlayerId} setActive={setCardActive} ws={ws} card_back={assignedDeck ? assignedDeck.cards[0].back : gameData?.decks[0].cards[0].back}/>
-      <CardChoosedModal active={cardChoosedModalActive} setActive={setCardChoosedModalActive} cardData={chosenCardData} playerId={cardModalPlayerId} card_body={gameData?.decks[0].cards[0].back}/>
-      <ObjectModal active={objectActive} setActive={setObjectActive} objects={gameData?.game_objects[0].image} onSelect={handleSelectObject} />
+      {gameData.decks && gameData.decks.length > 0 && (
+        <>
+          <CardModal
+            active={cardActive}
+            myId={myId}
+            playerId={cardModalPlayerId}
+            setActive={setCardActive}
+            card_back={
+              assignedDeck
+                ? assignedDeck.cards?.[0]?.back
+                : gameData.decks?.[0]?.cards?.[0]?.back
+            }
+          />
+          <CardChoosedModal
+            active={cardChoosedModalActive}
+            setActive={setCardChoosedModalActive}
+            cardData={chosenCardData}
+            playerId={cardModalPlayerId}
+            card_body={gameData.decks?.[0]?.cards?.[0]?.back}
+          />
+        </>
+      )}
+      {gameData.game_objects && gameData.game_objects.length > 0 && (
+        <ObjectModal
+          active={objectActive}
+          setActive={setObjectActive}
+          objects={gameData.game_objects?.[0]?.image}
+          onSelect={handleSelectObject}
+        />
+      )}
       {actionActive && (
         <Action 
           active={actionActive} 

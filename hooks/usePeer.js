@@ -16,9 +16,16 @@ const usePeer = () => {
     (async function initPeer() {
       if (typeof window !== 'undefined') {
         const Peer = (await import('peerjs')).default;
-        const storedPeerId = localStorage.getItem("peerId")
+        // const storedPeerId = localStorage.getItem("peerId")
         const userId = localStorage.getItem("user_id");
-        const myPeer = userId ? new Peer(userId) : new Peer();
+        // const myPeer = userId ? new Peer(userId) : new Peer();
+        const myPeer = new Peer(userId || undefined, {
+          config: {
+            iceServers: [
+              { urls: "stun:stun.l.google.com:19302" }
+            ]
+          }
+        });
         // const myPeer = storedPeerId ? new Peer(storedPeerId) : new Peer();
 
         setPeer(myPeer);
