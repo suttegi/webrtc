@@ -6,22 +6,9 @@ services:
     build: .
     ports:
       - "3000:3000"
-      - "3001:3001" 
     environment:
       - NODE_ENV=production
     volumes:
       - .:/src
       - /src/node_modules
-    command: ["npm", "start", "dev"]
-
-  socket:
-    container_name: socket-server
-    build: .
-    ports:
-      - "3001:3001"  
-    environment:
-      - NODE_ENV=production
-    volumes:
-      - .:/src
-      - /src/node_modules
-    command: ["node", "server.js"]  
+    command: ["npm", "start"]

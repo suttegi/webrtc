@@ -99,23 +99,23 @@ const Room = () => {
     if (!roomId) return;
   
     axios
-      // .get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/game/${roomId}`)
-      // .then((response) => {
-      //   console.log("✅ Game data fetched:", response.data);
-    axios
-      .get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/game`, {
-        params: { user_id: "3f49cf0e-712a-4ade-b5bb-eaf77d8d72ce" }
-      })
+      .get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/game/${roomId}`)
       .then((response) => {
         console.log("✅ Game data fetched:", response.data);
-        const game = response.data.find(game => game.id === roomId);
-        if (!game) {
-          throw new Error("Game not found");
-        }
-        console.log("✅ Game data fetched:", game);
+    // axios
+    //   .get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/game`, {
+    //     params: { user_id: "3f49cf0e-712a-4ade-b5bb-eaf77d8d72ce" }
+    //   })
+    //   .then((response) => {
+    //     console.log("✅ Game data fetched:", response.data);
+    //     const game = response.data.find(game => game.id === roomId);
+    //     if (!game) {
+    //       throw new Error("Game not found");
+    //     }
+    //     console.log("✅ Game data fetched:", game);
 
-        setGameData(game);
-        setCreatorId(game.creator_id);
+        setGameData(response.data);
+        setCreatorId(response.data.creator_id);
         console.log("myid in userids "+response.data.user_ids.includes(myId))
         if (!response.data.user_ids.includes(myId)) {
           return axios.patch(
