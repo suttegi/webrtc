@@ -4,6 +4,14 @@ const nextConfig = {
   images: {
     domains: ["storage.googleapis.com"],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/game/:path*',
+        destination: 'https://api-game.gameorbit.kz/api/v1/game/:path*', // прокси на API
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig

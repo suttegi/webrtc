@@ -53,6 +53,7 @@ const Room = () => {
 
   const [users, setUsers] = useState({});
   const [clientId, setClientId] = useState(null);
+  const [usernames, setUsernames] = useState({});
 
   const [showCams, setShowCams] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -96,24 +97,60 @@ const Room = () => {
         console.log("✅ Game data fetched:", response.data);
         setGameData(response.data);
         setCreatorId(response.data.creator_id);
-        console.log("myid in userids "+response.data.user_ids.includes(myId))
-        if (!response.data.user_ids.includes(myId)) {
-          return axios.patch(
+        const myUsername = localStorage.getItem("username")
+        if (myUsername) {
+          setUsernames(prev => ({ ...prev, [myId]: myUsername}))
+        }
+        const getCookie = (name) => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop().split(";").shift();
+          return null;
+        };
+        
+        const authToken = getCookie("auth_token");
+        
+        if (myId && !response.data.user_ids.includes(myId)) {
+          if (!authToken) {
+            console.error("auth_token not found in cookies");
+            return;
+          }
+        
+          console.log("Sending PATCH join request with:", myId);
+        
+          axios.patch(
             `${process.env.NEXT_PUBLIC_API_URL}/api/v1/game/${roomId}/join`,
             new URLSearchParams({ user_id: myId }),
-            { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+            {
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                Authorization: `Bearer ${authToken}`,
+              }
+            }
           );
+        
         }
+        
       })
       .then((joinResponse) => {
         if (joinResponse) {
-          console.log("✅ Successfully joined the game:", joinResponse.data);
+          console.log("Successfully joined the game:", joinResponse.data);
         }
       })
       .catch((error) => {
-        console.error("❌ Error:", error);
+        console.error("Error:", error);
       });
   }, [myId, roomId, setGameData]);
+
+useEffect(() => {
+  if (!socket || !myId) return;
+  const myUsername = localStorage.getItem("username");
+  if (myUsername) {
+    setUsernames(prev => ({ ...prev, [myId]: myUsername }));
+    socket.emit("username-update", { userId: myId, username: myUsername });
+  }
+}, [socket, myId]);
+
 
 
   useEffect(() => {
@@ -147,12 +184,25 @@ const Room = () => {
           [newUser]: { url: incomingStream, muted: true, playing: true },
         }));
         setUsers((prev) => ({ ...prev, [newUser]: call }));
+        const myUsername = localStorage.getItem('username')
+        if (myUsername) {
+          socket.emit("username-update", { userId: myId, username: myUsername})
+        }
       });
     };
 
+    socket.on("username-update", ({ userId, username }) => {
+      setUsernames(prev => ({ ...prev, [userId]: username }));
+    });
+    
+
     socket.on("user-connected", handleUserConnected);
-    return () => socket.off("user-connected", handleUserConnected);
-  }, [peer, setPlayers, socket, stream]);
+    return () => {
+      socket.off("user-connected", handleUserConnected);
+      socket.off("username-update")
+    }
+  }, [myId, peer, setPlayers, socket, stream]);
+  console.log("players: ", usernames)
 
   // обработка событий видео/аудио
   useEffect(() => {
@@ -327,6 +377,19 @@ const Room = () => {
 
   const gameRules = () => {
     setMenuOpen(false);
+  };
+
+  const handleToggleVideo = () => {
+    if (!stream) return;  
+    stream.getVideoTracks().forEach(track => {
+      track.enabled = !track.enabled;
+    });  
+    setPlayers(prev => {
+      const copy = { ...prev };
+      copy[myId].playing = !copy[myId].playing;
+      return copy;
+    });  
+    socket.emit("user-toggle-video", myId, roomId);
   };
 
   const handleCardIssue = (playerId) => {
@@ -509,7 +572,7 @@ const Room = () => {
                       isActive
                     />
                     <div className="absolute bottom-5 text-white left-2 bg-black/50 px-2 py-1 rounded">
-                      Вы 
+                      {usernames[myId] || "Вы"} 
                     </div>
                     {myId === creatorId && (
                       <button
@@ -527,8 +590,8 @@ const Room = () => {
                   return (
                     <div key={playerId} className="relative rounded-md overflow-hidden w-full">
                       <Player url={url} muted={muted} playing={playing} isActive={false} />
-                      <div className="absolute bottom-1 left-2 bg-black/50 px-2 py-1 rounded text-xs">
-                        Игрок {playerId}
+                      <div className="absolute bottom-5 left-2 text-white bg-black/50 px-2 py-1 rounded text-xs">
+                        {usernames[playerId] || `${playerId}`}
                       </div>
                       {myId === creatorId && (
                         <button
@@ -562,14 +625,16 @@ const Room = () => {
 
             <div className="w-full flex flex-col items-center gap-4 mt-4">
               <div className="bg-[#FFFFFF33] text-white px-4 py-2 rounded-md">
-                {myId === currentTurn ? "Ваш ход" : `Ход игрока ${currentTurn ? currentTurn : "не выбран"}`}
+              {myId === currentTurn 
+              ? "Ваш ход" 
+              : `Ход игрока ${usernames[currentTurn] || currentTurn || "не выбран"}`}
               </div>
               <div className="flex gap-4">
                 <Bottom 
                   muted={playerHighlighted?.muted} 
                   playing={playerHighlighted?.playing} 
                   toggleAudio={toggleAudio} 
-                  toggleVideo={toggleVideo} 
+                  toggleVideo={handleToggleVideo} 
                   leaveRoom={leaveRoom} 
                 />
               </div>
@@ -587,6 +652,7 @@ const Room = () => {
             myId={myId}
             playerId={cardModalPlayerId}
             setActive={setCardActive}
+            ws={ws}
             card_back={
               assignedDeck
                 ? assignedDeck.cards?.[0]?.back
@@ -606,7 +672,7 @@ const Room = () => {
         <ObjectModal
           active={objectActive}
           setActive={setObjectActive}
-          objects={gameData.game_objects?.[0]?.image}
+          objects={gameData.game_objects}
           onSelect={handleSelectObject}
         />
       )}
